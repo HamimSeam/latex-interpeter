@@ -72,14 +72,19 @@ function getDelimiterTokenType(c: string): TokenType {
   switch (c) {
     case "(":
       type = TokenType.LEFT_PAREN;
+      break;
     case ")":
       type = TokenType.RIGHT_PAREN;
+      break;
     case "{":
       type = TokenType.LEFT_BRACE;
+      break;
     case "}":
       type = TokenType.RIGHT_BRACE;
+      break;
     case ",":
       type = TokenType.SEPARATOR;
+      break;
   }
 
   return type;
@@ -98,17 +103,23 @@ function handleSingleCharToken(
   c: string
 ): LexerState {
   let newState: LexerState = LexerState.INITIAL;
-  if (c in delimiters) {
+
+  if (delimiters.has(c)) {
     tokens.push(generateToken(getDelimiterTokenType(c), c));
-  } else if (c in operators) {
+  } else if (operators.has(c)) {
     tokens.push(generateToken(TokenType.OPERATOR, c));
-  } else if (c in relations) {
+  } else if (relations.has(c)) {
     tokens.push(generateToken(TokenType.RELATION, c));
   } else if (state !== LexerState.COMMAND && isAlpha(c)) {
     tokens.push(generateToken(TokenType.IDENTIFIER, c));
   } else if (c === "\\") {
     newState = LexerState.ESCAPE;
+  } else if (c === "%") {
+    newState = LexerState.COMMENT;
+  } else if (!isWhitespace(c)) {
+    tokens.push(generateToken(TokenType.UNKNOWN, c));
   }
+
   return newState;
 }
 
@@ -140,6 +151,7 @@ export function tokenizeLaTeX(text: string): Token[] {
       case LexerState.COMMENT_EXIT:
         if (c === "\\") {
           tokens.push(generateToken(TokenType.COMMENT, buffer));
+          tokens.push(generateToken(TokenType.EOL, "\\\\"));
           state = LexerState.INITIAL;
           buffer = "";
         } else {
@@ -167,9 +179,9 @@ export function tokenizeLaTeX(text: string): Token[] {
         if (isAlpha(c)) {
           buffer += c;
         } else {
-          if (buffer in operators) {
+          if (operators.has(buffer)) {
             tokens.push(generateToken(TokenType.OPERATOR, buffer));
-          } else if (buffer in relations) {
+          } else if (relations.has(buffer)) {
             tokens.push(generateToken(TokenType.RELATION, buffer));
           } else {
             tokens.push(generateToken(TokenType.COMMAND, buffer));
@@ -200,6 +212,9 @@ export function tokenizeLaTeX(text: string): Token[] {
       case LexerState.FLOAT:
         if (isNumeric(c)) {
           buffer += c;
+        } else if (c === "e") {
+          buffer += c;
+          state = LexerState.SCIENTIFIC;
         } else {
           tokens.push(generateToken(TokenType.NUMBER, buffer));
 
@@ -208,7 +223,7 @@ export function tokenizeLaTeX(text: string): Token[] {
         }
         break;
 
-      case LexerState.FLOAT:
+      case LexerState.SCIENTIFIC:
         if (isNumeric(c)) {
           buffer += c;
         } else {
@@ -234,9 +249,9 @@ export function tokenizeLaTeX(text: string): Token[] {
     ];
 
     if (state === LexerState.COMMAND) {
-      if (buffer in operators) {
+      if (operators.has(buffer)) {
         tokens.push(generateToken(TokenType.OPERATOR, buffer));
-      } else if (buffer in relations) {
+      } else if (relations.has(buffer)) {
         tokens.push(generateToken(TokenType.RELATION, buffer));
       } else {
         tokens.push(generateToken(TokenType.COMMAND, buffer));
