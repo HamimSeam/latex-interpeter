@@ -1,102 +1,22 @@
-export enum TokenType {
-  IDENTIFIER,
-  NUMBER,
-  COMMAND,
-  OPERATOR,
-  RELATION,
-  LEFT_BRACE,
-  RIGHT_BRACE,
-  LEFT_PAREN,
-  RIGHT_PAREN,
-  SEPARATOR,
-  COMMENT,
-  EOL,
-  UNKNOWN,
-}
+import { TokenType, Token, LexerState } from "./types";
+import { OPERATORS, RELATIONS, DELIMITERS } from "./constants";
+import {
+  isAlpha,
+  isNumeric,
+  isWhitespace,
+  getDelimiterTokenType,
+  generateToken,
+} from "./utils";
 
-export interface Token {
-  type: TokenType;
-  value: string;
-}
-
-enum LexerState {
-  INITIAL,
-  ESCAPE,
-  COMMAND,
-  COMMENT,
-  COMMENT_EXIT,
-  INT,
-  FLOAT,
-  SCIENTIFIC,
-}
-
-const isAlpha = (str: string): boolean => /^[a-zA-Z]+$/.test(str);
-const isNumeric = (str: string): boolean => /^[0-9]+$/.test(str);
-const isWhitespace = (str: string): boolean => /^[ \t\n]+$/.test(str);
-
-const operators: Set<string> = new Set([
-  "triangle",
-  "angle",
-  "overline",
-  "odot",
-  "cdot",
-  "times",
-  "div",
-  "+",
-  "-",
-]);
-
-const relations: Set<string> = new Set([
-  "cong",
-  "sim",
-  "gt",
-  "lt",
-  "geq",
-  "leq",
-  "in",
-  "notin",
-  "subset",
-  "subseteq",
-  "supset",
-  "supseteq",
-  "=",
-  ">",
-  "<",
-]);
-
-const delimiters: Set<string> = new Set(["(", ")", "{", "}"]);
-
-function getDelimiterTokenType(c: string): TokenType {
-  let type: TokenType = TokenType.UNKNOWN;
-
-  switch (c) {
-    case "(":
-      type = TokenType.LEFT_PAREN;
-      break;
-    case ")":
-      type = TokenType.RIGHT_PAREN;
-      break;
-    case "{":
-      type = TokenType.LEFT_BRACE;
-      break;
-    case "}":
-      type = TokenType.RIGHT_BRACE;
-      break;
-    case ",":
-      type = TokenType.SEPARATOR;
-      break;
-  }
-
-  return type;
-}
-
-function generateToken(type: TokenType, value: string): Token {
-  return {
-    type,
-    value,
-  };
-}
-
+/**
+ * Adds both the current character and the buffer as separate tokens,
+ * when the current character is a single token.
+ *
+ * @param {Token[]} tokens - The current list of tokens from the lexer
+ * @param {LexerState} state - The current state of the lexer
+ * @param {string} c - The current character being processed by the lexer
+ * @returns {LexerState} The next state for the lexer
+ */
 function handleSingleCharToken(
   tokens: Token[],
   state: LexerState,
@@ -104,11 +24,11 @@ function handleSingleCharToken(
 ): LexerState {
   let newState: LexerState = LexerState.INITIAL;
 
-  if (delimiters.has(c)) {
+  if (DELIMITERS.has(c)) {
     tokens.push(generateToken(getDelimiterTokenType(c), c));
-  } else if (operators.has(c)) {
+  } else if (OPERATORS.has(c)) {
     tokens.push(generateToken(TokenType.OPERATOR, c));
-  } else if (relations.has(c)) {
+  } else if (RELATIONS.has(c)) {
     tokens.push(generateToken(TokenType.RELATION, c));
   } else if (state !== LexerState.COMMAND && isAlpha(c)) {
     tokens.push(generateToken(TokenType.IDENTIFIER, c));
@@ -123,6 +43,12 @@ function handleSingleCharToken(
   return newState;
 }
 
+/**
+ * Generates a list of tokens corresponding to a given LaTeX input.
+ *
+ * @param {string} text - The LaTeX to be processed by the lexer
+ * @returns {Token[]} The list of tokens derived by the text input
+ */
 export function tokenizeLaTeX(text: string): Token[] {
   const tokens: Token[] = [];
   let state: LexerState = LexerState.INITIAL;
@@ -179,9 +105,9 @@ export function tokenizeLaTeX(text: string): Token[] {
         if (isAlpha(c)) {
           buffer += c;
         } else {
-          if (operators.has(buffer)) {
+          if (OPERATORS.has(buffer)) {
             tokens.push(generateToken(TokenType.OPERATOR, buffer));
-          } else if (relations.has(buffer)) {
+          } else if (RELATIONS.has(buffer)) {
             tokens.push(generateToken(TokenType.RELATION, buffer));
           } else {
             tokens.push(generateToken(TokenType.COMMAND, buffer));
@@ -249,9 +175,9 @@ export function tokenizeLaTeX(text: string): Token[] {
     ];
 
     if (state === LexerState.COMMAND) {
-      if (operators.has(buffer)) {
+      if (OPERATORS.has(buffer)) {
         tokens.push(generateToken(TokenType.OPERATOR, buffer));
-      } else if (relations.has(buffer)) {
+      } else if (RELATIONS.has(buffer)) {
         tokens.push(generateToken(TokenType.RELATION, buffer));
       } else {
         tokens.push(generateToken(TokenType.COMMAND, buffer));

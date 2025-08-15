@@ -1,5 +1,6 @@
 // tokenizeLaTeX.test.ts
-import { tokenizeLaTeX, TokenType } from "./lexer"; // adjust path
+import { tokenizeLaTeX } from "../src/lexer"; // adjust path
+import { TokenType } from "../src/lexer/types";
 
 describe("tokenizeLaTeX", () => {
   it("recognizes operators", () => {
@@ -154,7 +155,7 @@ describe("tokenizeLaTeX", () => {
       { type: TokenType.NUMBER, value: "90" },
     ]);
   });
-  
+
   it("recognizes floats in scientific notation", () => {
     expect(tokenizeLaTeX("12345.678e90")).toEqual([
       { type: TokenType.NUMBER, value: "12345.678e90" },
