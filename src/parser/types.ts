@@ -69,12 +69,10 @@ export interface CallExpression extends BaseNode {
 // -----------------
 // Operators & Relations
 // -----------------
-export type OperatorType = "Add" | "Subtract" | "Multiply" | "Divide"; // expand as needed
 
 export interface Operator extends BaseNode {
   type: "Operator";
   token: Token; // OPERATOR token
-  operatorType: OperatorType;
 }
 
 export type RelationType =
@@ -85,8 +83,7 @@ export type RelationType =
 
 export interface Relation extends BaseNode {
   type: "Relation";
-  token: Token; // RELATION token
-  relationType: RelationType;
+  token: Token;
 }
 
 // -----------------
